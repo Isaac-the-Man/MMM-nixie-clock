@@ -1,0 +1,22 @@
+.digit {
+	color: #fff88a;
+	font-size: 800%;
+	padding: 1.5rem;
+	-webkit-box-reflect: below 0px linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.4));
+	text-shadow: 0 0 5px #fc792c, 0 0 10px #fc792c, 0 0 20px #fc792c,  0 0 30px #fc792c, -1px 0 #fc9403, 0 1px #fc9403, 1px 0 #fc9403, 0 -1px #fc9403;
+}
+
+.digit.dot {
+	font-size: 400%;
+}
+
+.digit_display {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+}
+
+.tube {
+	width: 160px;
+	-webkit-box-reflect: below 0px linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.4));
+}
