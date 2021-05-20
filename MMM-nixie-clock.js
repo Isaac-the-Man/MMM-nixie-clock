@@ -8,6 +8,7 @@ Module.register("MMM-nixie-clock", {
 	// default config
 	defaults: {
 		size: 'large',	// mini, small, medium, large
+		reflection: true,	// show clock reflection or not
 	},
 	// global state variables (do not change)
 	global: {
@@ -30,9 +31,15 @@ Module.register("MMM-nixie-clock", {
 		Log.info("Starting module: " + this.name);
 
 		// validate config
+		// config: size
 		if (!['mini', 'small', 'medium', 'large'].includes(this.config.size)) {
 			Log.info("Invalide size \"" + size + "\". Using default size \"large\".");
-			size = large;
+			this.config.size = large;
+		}
+		// config: reflection
+		if (typeof this.config.reflection !== "boolean") {
+			Log.info("Invalid option \"reflection\". Using default value \"true\".");
+			this.config.reflection = true;
 		}
 
 		// kickstart clock
@@ -108,13 +115,18 @@ Module.register("MMM-nixie-clock", {
 	createTube: function(n) {
 		let digit = document.createElement("img");
 		digit.src = `${this.data.path}/nixie-digits/${n}.png`;
-		digit.classList.add("tube");
+		if (this.config.reflection) {
+			digit.classList.add("reflect");
+		}
 		digit.classList.add("tube-" + this.config.size);
 		return digit;
 	},
 	createDot: function() {
 		let digit = document.createElement("div");
 		digit.classList.add("digit");
+		if (this.config.reflection) {
+			digit.classList.add("reflect");
+		}
 		digit.classList.add("dot-" + this.config.size);
 		digit.textContent = ".";
 		return digit;
