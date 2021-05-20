@@ -1,5 +1,5 @@
 # MMM-nixie-clock
-Retro nixie clock display for MagicMirror2.
+Retro nixie clock display for [MagicMirror²](https://github.com/MichMich/MagicMirror).
 
 ![Nixie](https://raw.githubusercontent.com/Isaac-the-Man/MMM-nixie-clock/master/screenshots/nixie.PNG)
 
