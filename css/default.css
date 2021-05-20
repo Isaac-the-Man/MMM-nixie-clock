@@ -6,7 +6,16 @@
 	text-shadow: 0 0 5px #fc792c, 0 0 10px #fc792c, 0 0 20px #fc792c,  0 0 30px #fc792c, -1px 0 #fc9403, 0 1px #fc9403, 1px 0 #fc9403, 0 -1px #fc9403;
 }
 
-.digit.dot {
+.digit.dot-mini {
+	font-size: 100%;
+}
+.digit.dot-small {
+	font-size: 200%;
+}
+.digit.dot-medium {
+	font-size: 300%;
+}
+.digit.dot-large {
 	font-size: 400%;
 }
 
@@ -17,6 +26,21 @@
 }
 
 .tube {
-	width: 160px;
 	-webkit-box-reflect: below 0px linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.4));
+}
+
+.tube-mini {
+	width: 40px;
+}
+
+.tube-small {
+	width: 80px;
+}
+
+.tube-medium, {
+	width: 120px;
+}
+
+.tube-large {
+	width: 160px;	
 }

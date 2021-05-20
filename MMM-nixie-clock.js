@@ -7,7 +7,7 @@
 Module.register("MMM-nixie-clock", {
 	// default config
 	defaults: {
-
+		size: 'large',	// mini, small, medium, large
 	},
 	// global state variables (do not change)
 	global: {
@@ -28,6 +28,12 @@ Module.register("MMM-nixie-clock", {
 	// start
 	start: function() {
 		Log.info("Starting module: " + this.name);
+
+		// validate config
+		if (!['mini', 'small', 'medium', 'large'].includes(this.config.size)) {
+			Log.info("Invalide size \"" + size + "\". Using default size \"large\".");
+			size = large;
+		}
 
 		// kickstart clock
 		let self = this;
@@ -103,12 +109,13 @@ Module.register("MMM-nixie-clock", {
 		let digit = document.createElement("img");
 		digit.src = `${this.data.path}/nixie-digits/${n}.png`;
 		digit.classList.add("tube");
+		digit.classList.add("tube-" + this.config.size);
 		return digit;
 	},
 	createDot: function() {
 		let digit = document.createElement("div");
 		digit.classList.add("digit");
-		digit.classList.add("dot");
+		digit.classList.add("dot-" + this.config.size);
 		digit.textContent = ".";
 		return digit;
 	},
