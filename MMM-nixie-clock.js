@@ -15,6 +15,7 @@ Module.register("MMM-nixie-clock", {
 		flipIndex: [],
 		resetFlag: false,
 		prevTime: [0,0,0,0,0,0],
+		nextTime: [0,0,0,0,0,0],
 	},
 	// required scripts
 	getScripts: function() {
@@ -43,6 +44,14 @@ Module.register("MMM-nixie-clock", {
 				self.global.flipIndex.forEach((i) => {
 					self.global.prevTime[i] = 9;	// start digit-reset at 9
 				});
+				// change non-resetting digits
+				setTimeout(() => {
+					for (let i = 0; i < 6; i++) {
+						if (!self.global.flipIndex.includes(i)) {
+							self.global.prevTime[i] = self.global.nextTime[i];
+						}
+					}
+				}, 1000 - moment().milliseconds() + 50);
 			}
 
 			setTimeout(clockUpdate, self.getDelay());
@@ -138,6 +147,7 @@ Module.register("MMM-nixie-clock", {
 		let next = now.clone().add(1, 'seconds');
 		let nowArr = this.timeToArr(now);
 		let nextArr = this.timeToArr(next);
+		this.global.nextTime = nextArr;
 		for (let i = 0; i < 6; i++) {
 			if (nextArr[i] < nowArr[i]) {
 				flipIndex.push(i);
