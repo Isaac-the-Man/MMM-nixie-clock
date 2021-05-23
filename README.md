@@ -25,6 +25,7 @@ var config = {
       config: {
         size: 'large',
         reflection: true
+        }
     }
   ]
 }
