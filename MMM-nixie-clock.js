@@ -7,8 +7,9 @@
 Module.register("MMM-nixie-clock", {
 	// default config
 	defaults: {
-		size: 'large',	// mini, small, medium, large
+		size: 'large',		// mini, small, medium, large
 		reflection: true,	// show clock reflection or not
+		timeFormat: 24,		// 12 or 24 hour display
 	},
 	// global state variables (do not change)
 	global: {
@@ -40,6 +41,11 @@ Module.register("MMM-nixie-clock", {
 		if (typeof this.config.reflection !== "boolean") {
 			Log.info("Invalid option \"reflection\". Using default value \"true\".");
 			this.config.reflection = true;
+		}
+		// config: timeFormat
+		if (![12, 24].includes(this.config.timeFormat)) {
+			Log.info("Invalid timeFormat \"" + this.config.timeFormat + "\". Using defualt timeFormat \"24\".");
+			this.config.timeFormat = 24;
 		}
 
 		// kickstart clock
@@ -134,8 +140,8 @@ Module.register("MMM-nixie-clock", {
 	// convert moment to 6-digit array
 	timeToArr: function(now) {
 		return [
-			this.getFirstDigit(now.hour()),
-			this.getSecondDigit(now.hour()),
+			this.getFirstDigit(now.hour() % this.config.timeFormat),
+			this.getSecondDigit(now.hour() % this.config.timeFormat),
 			this.getFirstDigit(now.minutes()),
 			this.getSecondDigit(now.minutes()),
 			this.getFirstDigit(now.seconds()),
