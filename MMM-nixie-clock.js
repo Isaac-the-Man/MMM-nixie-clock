@@ -140,8 +140,8 @@ Module.register("MMM-nixie-clock", {
 	// convert moment to 6-digit array
 	timeToArr: function(now) {
 		return [
-			this.getFirstDigit(now.hour() % this.config.timeFormat),
-			this.getSecondDigit(now.hour() % this.config.timeFormat),
+			this.getFirstDigit(now.hour() > 12 ? now.hour() : now.hour() % this.config.timeFormat),
+			this.getSecondDigit(now.hour() > 12 ? now.hour() : now.hour() % this.config.timeFormat),
 			this.getFirstDigit(now.minutes()),
 			this.getSecondDigit(now.minutes()),
 			this.getFirstDigit(now.seconds()),
