@@ -14,6 +14,7 @@ There are two configurable options:
 |--------|-------------|---------|
 | size | `'mini'`, `'small'`, `'medium'`, or `'large'`. | `'large'` |
 | reflection | set `false` to turn off reflection effect. | `true` |
+| timeFormat | '12' hour or '24' hour display. | '24' |
 
 Sample config file (default):
 ```js
@@ -24,7 +25,8 @@ var config = {
       position: 'middle_center',
       config: {
         size: 'large',
-        reflection: true
+        reflection: true,
+        timeFormat: 24,
     }
   ]
 }
