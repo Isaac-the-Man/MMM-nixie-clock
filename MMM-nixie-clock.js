@@ -151,8 +151,8 @@ Module.register("MMM-nixie-clock", {
 	timeToArr: function(now) {
 		if (this.config.displaySeconds) {
 			return [
-				this.getFirstDigit(now.hour() > 12 ? now.hour() : now.hour() % this.config.timeFormat),
-				this.getSecondDigit(now.hour() > 12 ? now.hour() : now.hour() % this.config.timeFormat),
+				this.getFirstDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
+				this.getSecondDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
 				this.getFirstDigit(now.minutes()),
 				this.getSecondDigit(now.minutes()),
 				this.getFirstDigit(now.seconds()),
@@ -160,8 +160,8 @@ Module.register("MMM-nixie-clock", {
 			];
 		} else {
 			return [
-				this.getFirstDigit(now.hour() > 12 ? now.hour() : now.hour() % this.config.timeFormat),
-				this.getSecondDigit(now.hour() > 12 ? now.hour() : now.hour() % this.config.timeFormat),
+				this.getFirstDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
+				this.getSecondDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
 				this.getFirstDigit(now.minutes()),
 				this.getSecondDigit(now.minutes()),
 			];
@@ -192,7 +192,7 @@ Module.register("MMM-nixie-clock", {
 		let nowArr = this.timeToArr(now);
 		let nextArr = this.timeToArr(next);
 		this.global.nextTime = nextArr;
-		for (let i = 0; i < this.config.displaySeconds ? 6 : 4; i++) {
+		for (let i = 0; i < (this.config.displaySeconds ? 6 : 4); i++) {
 			if (nextArr[i] < nowArr[i]) {
 				flipIndex.push(i);
 			}
