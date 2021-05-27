@@ -95,6 +95,10 @@ Module.register("MMM-nixie-clock", {
 			});
 			if (flipN === 0) {	// check when to end digit-reset
 				this.global.mode = 'clock';
+				// calibrate 12:00 PM to 01:00 PM in 12hr mode
+				if (this.config.timeFormat === 12 && moment.hour() === 13) {
+					time[1] = 1;	// was 0 originally
+				}
 			}
 		}
 		// create digits
