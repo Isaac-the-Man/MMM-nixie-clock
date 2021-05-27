@@ -70,13 +70,23 @@ Module.register("MMM-nixie-clock", {
 					self.global.prevTime[i] = 9;	// start digit-reset at 9
 				});
 				// change non-resetting digits
-				setTimeout(() => {
-					for (let i = 0; i < 6; i++) {
-						if (!self.global.flipIndex.includes(i)) {
-							self.global.prevTime[i] = self.global.nextTime[i];
+				if (self.config.displaySeconds) {
+					setTimeout(() => {
+						for (let i = 0; i < 6; i++) {
+							if (!self.global.flipIndex.includes(i)) {
+								self.global.prevTime[i] = self.global.nextTime[i];
+							}
 						}
-					}
-				}, 1000 - moment().milliseconds() + 50);
+					}, 1000 - moment().milliseconds() + 50);
+				} else {
+					setTimeout(() => {
+						for (let i = 0; i < 4; i++) {
+							if (!self.global.flipIndex.includes(i)) {
+								self.global.prevTime[i] = self.global.nextTime[i];
+							}
+						}
+					}, (60 - moment().seconds())*1000 - moment().milliseconds() + 50);
+				}
 			}
 
 			setTimeout(clockUpdate, self.getDelay());
