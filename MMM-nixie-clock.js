@@ -188,7 +188,12 @@ Module.register("MMM-nixie-clock", {
 	// check which digit will flip
 	checkFlip: function(now) {
 		let flipIndex = [];
-		let next = now.clone().add(1, 'seconds');
+		let next;
+		if (this.config.displaySeconds) {
+			next = now.clone().add(1, 'seconds');
+		} else {
+			next = now.clone().add(1, 'minutes');
+		}
 		let nowArr = this.timeToArr(now);
 		let nextArr = this.timeToArr(next);
 		this.global.nextTime = nextArr;
