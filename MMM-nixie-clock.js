@@ -215,7 +215,11 @@ Module.register("MMM-nixie-clock", {
 		} else if (this.global.mode === 'reset') {      // update very 50s (digit-reset animation)
 			if (this.global.resetFlag === true) {
 				this.global.resetFlag = false;
-				return 800 - moment().milliseconds();
+				if (this.config.displaySeconds) {
+					return 800 - moment().milliseconds();
+				} else {
+					return (59 - moment().seconds())*1000 + 800 - moment().milliseconds();
+				}
 			}
 			return 50;
 		}
