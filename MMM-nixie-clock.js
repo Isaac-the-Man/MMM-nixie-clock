@@ -144,7 +144,7 @@ Module.register("MMM-nixie-clock", {
 	// helper functions
 	createTube: function(n) {
 		let digit = document.createElement("img");
-		digit.src = `${this.data.path}/nixie-digits/${n}.png`;
+		digit.src = `${this.data.path}/nixie-digits/${this.config.size}/${n}.png`;
 		if (this.config.reflection) {
 			digit.classList.add("reflect");
 		}
