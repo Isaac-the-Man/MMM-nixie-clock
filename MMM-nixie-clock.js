@@ -7,8 +7,10 @@
 Module.register("MMM-nixie-clock", {
 	// default config
 	defaults: {
-		size: 'large',	// mini, small, medium, large
+		size: 'large',		// mini, small, medium, large
 		reflection: true,	// show clock reflection or not
+		timeFormat: 24,		// 12 or 24 hour display
+		displaySeconds: true,	// 6 digit (true) or 4 digit clock (false)
 	},
 	// global state variables (do not change)
 	global: {
@@ -41,6 +43,16 @@ Module.register("MMM-nixie-clock", {
 			Log.info("Invalid option \"reflection\". Using default value \"true\".");
 			this.config.reflection = true;
 		}
+		// config: timeFormat
+		if (![12, 24].includes(this.config.timeFormat)) {
+			Log.info("Invalid timeFormat \"" + this.config.timeFormat + "\". Using defualt timeFormat \"24\".");
+			this.config.timeFormat = 24;
+		}
+		// config: displaySeconds
+		if (typeof this.config.displaySeconds !== "boolean") {
+			Log.info("Invalid option \"displaySeconds\". Using defualt value \"true\".");
+			this.config.displaySeconds = true;
+		}
 
 		// kickstart clock
 		let self = this;
@@ -58,13 +70,23 @@ Module.register("MMM-nixie-clock", {
 					self.global.prevTime[i] = 9;	// start digit-reset at 9
 				});
 				// change non-resetting digits
-				setTimeout(() => {
-					for (let i = 0; i < 6; i++) {
-						if (!self.global.flipIndex.includes(i)) {
-							self.global.prevTime[i] = self.global.nextTime[i];
+				if (self.config.displaySeconds) {
+					setTimeout(() => {
+						for (let i = 0; i < 6; i++) {
+							if (!self.global.flipIndex.includes(i)) {
+								self.global.prevTime[i] = self.global.nextTime[i];
+							}
 						}
-					}
-				}, 1000 - moment().milliseconds() + 50);
+					}, 1000 - moment().milliseconds() + 50);
+				} else {
+					setTimeout(() => {
+						for (let i = 0; i < 4; i++) {
+							if (!self.global.flipIndex.includes(i)) {
+								self.global.prevTime[i] = self.global.nextTime[i];
+							}
+						}
+					}, (60 - moment().seconds())*1000 - moment().milliseconds() + 50);
+				}
 			}
 
 			setTimeout(clockUpdate, self.getDelay());
@@ -83,18 +105,24 @@ Module.register("MMM-nixie-clock", {
 			});
 			if (flipN === 0) {	// check when to end digit-reset
 				this.global.mode = 'clock';
+				// calibrate 12:00 PM to 01:00 PM in 12hr mode
+				if (this.config.timeFormat === 12 && moment().hour() === 13) {
+					time[1] = 1;	// was 0 originally
+				}
 			}
 		}
 		// create digits
-		let h_1, h_2, m_1, m_2, s_1, s_2;
+		let h_1, h_2, m_1, m_2, s_1, s_2, dot_1, dot_2;
 		h_1 = this.createTube(time[0]);
 		h_2 = this.createTube(time[1]);
 		m_1 = this.createTube(time[2]);
 		m_2 = this.createTube(time[3]);
-		s_1 = this.createTube(time[4]);
-		s_2 = this.createTube(time[5]);
-		let dot_1 = this.createDot();
-		let dot_2 = this.createDot();
+		if (this.config.displaySeconds) {
+			s_1 = this.createTube(time[4]);
+			s_2 = this.createTube(time[5]);
+			dot_2 = this.createDot();
+		}
+		dot_1 = this.createDot();
 		// append digits
 		let display = document.createElement("div");
 		display.classList.add("digit_display");
@@ -103,9 +131,11 @@ Module.register("MMM-nixie-clock", {
 		display.appendChild(dot_1);
 		display.appendChild(m_1);
 		display.appendChild(m_2);
-		display.appendChild(dot_2);
-		display.appendChild(s_1);
-		display.appendChild(s_2);
+		if (this.config.displaySeconds) {
+			display.appendChild(dot_2);
+			display.appendChild(s_1);
+			display.appendChild(s_2);
+		}
 		// update prev time
 		this.global.prevTime = time;
 		// return dom
@@ -114,7 +144,7 @@ Module.register("MMM-nixie-clock", {
 	// helper functions
 	createTube: function(n) {
 		let digit = document.createElement("img");
-		digit.src = `${this.data.path}/nixie-digits/${n}.png`;
+		digit.src = `${this.data.path}/nixie-digits/${this.config.size}/${n}.png`;
 		if (this.config.reflection) {
 			digit.classList.add("reflect");
 		}
@@ -133,14 +163,23 @@ Module.register("MMM-nixie-clock", {
 	},
 	// convert moment to 6-digit array
 	timeToArr: function(now) {
-		return [
-			this.getFirstDigit(now.hour()),
-			this.getSecondDigit(now.hour()),
-			this.getFirstDigit(now.minutes()),
-			this.getSecondDigit(now.minutes()),
-			this.getFirstDigit(now.seconds()),
-			this.getSecondDigit(now.seconds()),
-		];
+		if (this.config.displaySeconds) {
+			return [
+				this.getFirstDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
+				this.getSecondDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
+				this.getFirstDigit(now.minutes()),
+				this.getSecondDigit(now.minutes()),
+				this.getFirstDigit(now.seconds()),
+				this.getSecondDigit(now.seconds()),
+			];
+		} else {
+			return [
+				this.getFirstDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
+				this.getSecondDigit(now.hour() > 12 ? now.hour() % this.config.timeFormat : now.hour()),
+				this.getFirstDigit(now.minutes()),
+				this.getSecondDigit(now.minutes()),
+			];
+		}
 	},
 	// get 6-digit time
 	getTime: function() {
@@ -163,11 +202,16 @@ Module.register("MMM-nixie-clock", {
 	// check which digit will flip
 	checkFlip: function(now) {
 		let flipIndex = [];
-		let next = now.clone().add(1, 'seconds');
+		let next;
+		if (this.config.displaySeconds) {
+			next = now.clone().add(1, 'seconds');
+		} else {
+			next = now.clone().add(1, 'minutes');
+		}
 		let nowArr = this.timeToArr(now);
 		let nextArr = this.timeToArr(next);
 		this.global.nextTime = nextArr;
-		for (let i = 0; i < 6; i++) {
+		for (let i = 0; i < (this.config.displaySeconds ? 6 : 4); i++) {
 			if (nextArr[i] < nowArr[i]) {
 				flipIndex.push(i);
 			}
@@ -176,12 +220,20 @@ Module.register("MMM-nixie-clock", {
 	},
 	// update interval
 	getDelay: function() {
-		if (this.global.mode === 'clock') {     // normally update very 1s
-			return 1000 - moment().milliseconds() + 50;     // offset by 50ms
+		if (this.global.mode === 'clock') {
+			if (this.config.displaySeconds) {	// update every second
+				return 1000 - moment().milliseconds() + 50;		// offset by 50ms
+			} else {	// update every minute
+				return (60 - moment().seconds())*1000 - moment().milliseconds() + 50;
+			}
 		} else if (this.global.mode === 'reset') {      // update very 50s (digit-reset animation)
 			if (this.global.resetFlag === true) {
 				this.global.resetFlag = false;
-				return 800 - moment().milliseconds();
+				if (this.config.displaySeconds) {
+					return 800 - moment().milliseconds();
+				} else {
+					return (59 - moment().seconds())*1000 + 800 - moment().milliseconds();
+				}
 			}
 			return 50;
 		}
