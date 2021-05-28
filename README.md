@@ -29,6 +29,7 @@ var config = {
         reflection: true,
         timeFormat: 24,
         displaySeconds: true,
+      }
     }
   ]
 }
