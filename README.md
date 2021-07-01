@@ -9,7 +9,7 @@ There's also a digit reset animation.
 
 ## Configuration
 
-There are two configurable options:
+There are four configurable options:
 | option | description | default |
 |--------|-------------|---------|
 | size | `'mini'`, `'small'`, `'medium'`, or `'large'`. | `'large'` |
