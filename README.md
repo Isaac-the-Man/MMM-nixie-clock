@@ -16,6 +16,8 @@ There are four configurable options:
 | reflection | set `false` to turn off reflection effect. | `true` |
 | timeFormat | `12` hour or `24` hour display. | `24` |
 | displaySeconds | `true` for a 6-digit clock or `false` for a 4-digit clock. | `true` |
+| displayDateInterval | integer value >=0 and <=5 to set how often the date will be displayed in minutes (for example 2 is every other minute), 0 means do not display the date. | `2` |
+| displayDateTime | integer value >0 and <=3 to set the time the date will be displayed at the start of the minute. | `3` |
 
 Sample config file (default):
 ```js
@@ -29,6 +31,8 @@ var config = {
         reflection: true,
         timeFormat: 24,
         displaySeconds: true,
+        displayDateInterval: 2,
+        displayDateTime: 3,
       }
     }
   ]
