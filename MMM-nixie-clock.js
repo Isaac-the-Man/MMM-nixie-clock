@@ -11,6 +11,8 @@ Module.register("MMM-nixie-clock", {
 		reflection: true,	// show clock reflection or not
 		timeFormat: 24,		// 12 or 24 hour display
 		displaySeconds: true,	// 6 digit (true) or 4 digit clock (false)
+		displayDateInterval: 2,	// When to display date, every 2 minutes, 0 = don't display date
+		displayDateTime: 3,	// Display date for 3 seconds
 	},
 	// global state variables (do not change)
 	global: {
@@ -53,24 +55,37 @@ Module.register("MMM-nixie-clock", {
 			Log.info("Invalid option \"displaySeconds\". Using defualt value \"true\".");
 			this.config.displaySeconds = true;
 		}
-
+		// config: displayDateInterval
+		if (typeof this.config.displayDateInterval !== "number" || this.config.displayDateInterval % 1 !== 0 || this.config.displayDateInterval < 0 || this.config.displayDateInterval > 5) {
+			Log.info("Invalid displayDateInterval \"" + this.config.displayDateInterval + "\". Using default  \"2\".");
+			this.config.displayDateInterval = 2;
+		}
+		// config: displayDateTime
+		if (this.config.displayDateInterval === 0)
+		{
+			this.config.displayDateTime = 0
+		} else if (typeof this.config.displayDateTime !== "number" || this.config.displayDateTime % 1 !== 0 || this.config.displayTime <= 0 || this.config.displayDateTime > 3) {
+			Log.info("Invalid displayDateTime \"" + this.config.displayDateTime + "\". Using default  \"3\".");
+			this.config.displayDateTime = 3;
+		}
 		// kickstart clock
 		let self = this;
 		let clockUpdate = function() {
 			self.updateDom();
 
 			// check to trigger digit-reset animation
-			if (self.global.mode === 'clock') {
+			if ((self.global.mode === 'clock') || (self.global.mode === 'date')) {
 				self.global.flipIndex = self.checkFlip(moment());
 			}
-			if (self.global.mode === 'clock' && self.global.flipIndex.length > 0) {
+			if (((self.global.mode === 'clock') || (self.global.mode === 'date')) && self.global.flipIndex.length > 0) {
+				let prevMode = self.global.mode;
 				self.global.mode = 'reset';
 				self.global.resetFlag = true;
 				self.global.flipIndex.forEach((i) => {
 					self.global.prevTime[i] = 9;	// start digit-reset at 9
 				});
 				// change non-resetting digits
-				if (self.config.displaySeconds) {
+				if ((self.config.displaySeconds) || (prevMode === 'date')) {
 					setTimeout(() => {
 						for (let i = 0; i < 6; i++) {
 							if (!self.global.flipIndex.includes(i)) {
@@ -96,7 +111,8 @@ Module.register("MMM-nixie-clock", {
 	// refresh DOM
 	getDom: function() {
 		// get time
-		let time = this.getTime();
+		let now = moment();
+		let time = this.getTime(now);
 		// check if digit-reset
 		if (this.global.mode === 'reset') {
 			let flipN;
@@ -104,10 +120,16 @@ Module.register("MMM-nixie-clock", {
 				flipN = --time[i];
 			});
 			if (flipN === 0) {	// check when to end digit-reset
-				this.global.mode = 'clock';
-				// calibrate 12:00 PM to 01:00 PM in 12hr mode
-				if (this.config.timeFormat === 12 && moment().hour() === 13) {
-					time[1] = 1;	// was 0 originally
+				if ((this.config.displayDateInterval !== 0) && (now.seconds() >= 0) && (now.seconds() <= this.config.displayDateTime) && (now.minutes() % this.config.displayDateInterval === 0)) {
+					this.global.mode = 'date';
+					time = this.getTime(now);
+				} else {
+					this.global.mode = 'clock';
+					time = this.getTime(now);
+					// calibrate 12:00 PM to 01:00 PM in 12hr mode
+					if (this.config.timeFormat === 12 && moment().hour() === 13) {
+						time[1] = 1;	// was 0 originally
+					}
 				}
 			}
 		}
@@ -181,11 +203,32 @@ Module.register("MMM-nixie-clock", {
 			];
 		}
 	},
+	// convert moment to 6-digit array
+	dateToArr: function(now) {
+		if (this.config.displaySeconds) {
+			return [
+				this.getFirstDigit(now.date()),
+				this.getSecondDigit(now.date()),
+				this.getFirstDigit(now.month()+1),
+				this.getSecondDigit(now.month()+1),
+				this.getFirstDigit(now.year() % 100),
+				this.getSecondDigit(now.year() % 100),
+			];
+		} else {
+			return [
+				this.getFirstDigit(now.date()),
+				this.getSecondDigit(now.date()),
+				this.getFirstDigit(now.month()+1),
+				this.getSecondDigit(now.month()+1),
+			];
+		}
+	},
 	// get 6-digit time
-	getTime: function() {
-		if (this.global.mode === 'clock') {
-			let now = moment();
+	getTime: function(now) {
+		if ((this.global.mode === 'clock') || ((this.global.mode === 'date') && (now.seconds() > this.config.displayDateTime))) {
 			return this.timeToArr(now);
+		} else if ((this.global.mode === 'date') || ((this.global.mode === 'clock') && (this.config.displayDateInterval !== 0) && (now.minutes() % this.global.displayDateInterval === 0) && (now.seconds() >= 0) && (now.seconds() <= this.config.displayDateTime))) {
+			return this.dateToArr(now);
 		} else if (this.global.mode === 'reset') {
 			return this.global.prevTime;
 		}
@@ -202,18 +245,38 @@ Module.register("MMM-nixie-clock", {
 	// check which digit will flip
 	checkFlip: function(now) {
 		let flipIndex = [];
+		let seconds = (now.seconds() + 1) % 60;
+		let minutes = now.minutes() + ((seconds === 0) ? 1 : 0);
 		let next;
 		if (this.config.displaySeconds) {
 			next = now.clone().add(1, 'seconds');
 		} else {
 			next = now.clone().add(1, 'minutes');
 		}
-		let nowArr = this.timeToArr(now);
-		let nextArr = this.timeToArr(next);
-		this.global.nextTime = nextArr;
-		for (let i = 0; i < (this.config.displaySeconds ? 6 : 4); i++) {
-			if (nextArr[i] < nowArr[i]) {
+		if ((this.global.mode === 'date') && (seconds > this.config.displayDateTime)) {
+			this.global.mode = 'clock';
+			let nextArr = this.timeToArr(next);
+			this.global.nextTime = nextArr;
+			for (let i = 0; i < (this.config.displaySeconds ? 6 : 4); i++) {
 				flipIndex.push(i);
+			}
+		} else if (this.global.mode === 'clock') {
+			if ((this.config.displayDateInterval !== 0) && (seconds >= 0) && (seconds <= this.config.displayDateTime) && (minutes % this.config.displayDateInterval === 0)) {
+				this.global.mode = 'date';
+				let nextArr = this.dateToArr(next);
+				this.global.nextTime = nextArr;
+				for (let i = 0; i < (this.config.displaySeconds ? 6 : 4); i++) {
+					flipIndex.push(i);
+				}
+			} else {
+				let nextArr = this.timeToArr(next);
+				this.global.nextTime = nextArr;
+				let nowArr = this.timeToArr(now);
+				for (let i = 0; i < (this.config.displaySeconds ? 6 : 4); i++) {
+					if (nextArr[i] < nowArr[i]) {
+						flipIndex.push(i);
+					}
+				}
 			}
 		}
 		return flipIndex;
@@ -226,6 +289,8 @@ Module.register("MMM-nixie-clock", {
 			} else {	// update every minute
 				return (60 - moment().seconds())*1000 - moment().milliseconds() + 50;
 			}
+		} else if (this.global.mode === 'date') {
+			return 1000 - moment().milliseconds() + 50;		// offset by 50ms
 		} else if (this.global.mode === 'reset') {      // update very 50s (digit-reset animation)
 			if (this.global.resetFlag === true) {
 				this.global.resetFlag = false;
