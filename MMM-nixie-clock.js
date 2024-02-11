@@ -13,6 +13,8 @@ Module.register("MMM-nixie-clock", {
 		displaySeconds: true,	// 6 digit (true) or 4 digit clock (false)
 		displayDateInterval: 2,	// When to display date, every 2 minutes, 0 = don't display date
 		displayDateTime: 3,	// Display date for 3 seconds
+		tz: 'default',		// Timezone (e.g. "America/New_York"), set to "default" for local time
+		tz_title: 'default'	// Timezone title, can be set to arbitrary string, set to empty string to disable, set to "default" to display the default timezone string, only works if timezone is set to non-default.
 	},
 	// global state variables (do not change)
 	global: {
@@ -24,7 +26,7 @@ Module.register("MMM-nixie-clock", {
 	},
 	// required scripts
 	getScripts: function() {
-		return ["moment.js"];
+		return ["moment.js", "moment-timezone-with-data.js"];
 	},
 	// required styles
 	getStyles: function() {
@@ -38,44 +40,54 @@ Module.register("MMM-nixie-clock", {
 		// config: size
 		if (!['mini', 'small', 'medium', 'large'].includes(this.config.size)) {
 			Log.info("Invalide size \"" + size + "\". Using default size \"large\".");
-			this.config.size = large;
+			this.config.size = this.defaults.size;
 		}
 		// config: reflection
 		if (typeof this.config.reflection !== "boolean") {
 			Log.info("Invalid option \"reflection\". Using default value \"true\".");
-			this.config.reflection = true;
+			this.config.reflection = this.defaults.size;
 		}
 		// config: timeFormat
 		if (![12, 24].includes(this.config.timeFormat)) {
 			Log.info("Invalid timeFormat \"" + this.config.timeFormat + "\". Using defualt timeFormat \"24\".");
-			this.config.timeFormat = 24;
+			this.config.timeFormat = this.defaults.timeFormat;
 		}
 		// config: displaySeconds
 		if (typeof this.config.displaySeconds !== "boolean") {
 			Log.info("Invalid option \"displaySeconds\". Using defualt value \"true\".");
-			this.config.displaySeconds = true;
+			this.config.displaySeconds = this.defaults.displaySeconds;
 		}
 		// config: displayDateInterval
 		if (typeof this.config.displayDateInterval !== "number" || this.config.displayDateInterval % 1 !== 0 || this.config.displayDateInterval < 0 || this.config.displayDateInterval > 5) {
 			Log.info("Invalid displayDateInterval \"" + this.config.displayDateInterval + "\". Using default  \"2\".");
-			this.config.displayDateInterval = 2;
+			this.config.displayDateInterval = this.defaults.displayDateInterval;
 		}
 		// config: displayDateTime
-		if (this.config.displayDateInterval === 0)
-		{
-			this.config.displayDateTime = 0
+		if (this.config.displayDateInterval === 0) {
+			this.config.displayDateTime = 0;
 		} else if (typeof this.config.displayDateTime !== "number" || this.config.displayDateTime % 1 !== 0 || this.config.displayTime <= 0 || this.config.displayDateTime > 3) {
 			Log.info("Invalid displayDateTime \"" + this.config.displayDateTime + "\". Using default  \"3\".");
-			this.config.displayDateTime = 3;
+			this.config.displayDateTime = this.config.displayDateTime;
 		}
+		// config: tz (timezone)
+		if (typeof this.config.tz !== "string") {
+			Log.info("Invalid timezone + \"" + this.config.tz + "\". Using default timezone.");
+			this.config.tz = this.defaults.tz;
+		}
+		// config: tz_title (timezone title)
+		if (typeof this.config.tz_title !== "string") {
+			Log.info("Invalid timezone title \"" + this.config.tz_title + "\". Using default value.")
+			this.config.tz_title = this.defaults.tz_title;
+		}
+		
 		// kickstart clock
 		let self = this;
-		let clockUpdate = function() {
+		function clockUpdate() {
 			self.updateDom();
 
 			// check to trigger digit-reset animation
 			if ((self.global.mode === 'clock') || (self.global.mode === 'date')) {
-				self.global.flipIndex = self.checkFlip(moment());
+				self.global.flipIndex = self.checkFlip(self.getMoment());
 			}
 			if (((self.global.mode === 'clock') || (self.global.mode === 'date')) && self.global.flipIndex.length > 0) {
 				let prevMode = self.global.mode;
@@ -92,7 +104,7 @@ Module.register("MMM-nixie-clock", {
 								self.global.prevTime[i] = self.global.nextTime[i];
 							}
 						}
-					}, 1000 - moment().milliseconds() + 50);
+					}, 1000 - self.getMoment().milliseconds() + 50);
 				} else {
 					setTimeout(() => {
 						for (let i = 0; i < 4; i++) {
@@ -100,7 +112,7 @@ Module.register("MMM-nixie-clock", {
 								self.global.prevTime[i] = self.global.nextTime[i];
 							}
 						}
-					}, (60 - moment().seconds())*1000 - moment().milliseconds() + 50);
+					}, (60 - self.getMoment().seconds())*1000 - self.getMoment().milliseconds() + 50);
 				}
 			}
 
@@ -111,7 +123,7 @@ Module.register("MMM-nixie-clock", {
 	// refresh DOM
 	getDom: function() {
 		// get time
-		let now = moment();
+		let now = this.getMoment();
 		let time = this.getTime(now);
 		// check if digit-reset
 		if (this.global.mode === 'reset') {
@@ -127,7 +139,7 @@ Module.register("MMM-nixie-clock", {
 					this.global.mode = 'clock';
 					time = this.getTime(now);
 					// calibrate 12:00 PM to 01:00 PM in 12hr mode
-					if (this.config.timeFormat === 12 && moment().hour() === 13) {
+					if (this.config.timeFormat === 12 && this.getMoment().hour() === 13) {
 						time[1] = 1;	// was 0 originally
 					}
 				}
@@ -146,7 +158,19 @@ Module.register("MMM-nixie-clock", {
 		}
 		dot_1 = this.createDot();
 		// append digits
-		let display = document.createElement("div");
+		let container = document.createElement("div");	// parent container
+		if (this.config.tz !== "default" && this.config.tz_title !== "") {
+			// only show timezone title if tz is specified
+			let tz_title = document.createElement("div");	// timezone title
+			if (this.config.tz_title === "default") {
+				tz_title.innerHTML = this.config.tz;
+			} else {
+				tz_title.innerHTML = this.config.tz_title;
+			}
+			tz_title.classList.add("timezone-title");
+			container.appendChild(tz_title)
+		}
+		let display = document.createElement("div");	// nixie tube wrapper
 		display.classList.add("digit_display");
 		display.appendChild(h_1);
 		display.appendChild(h_2);
@@ -158,12 +182,19 @@ Module.register("MMM-nixie-clock", {
 			display.appendChild(s_1);
 			display.appendChild(s_2);
 		}
+		container.appendChild(display);
 		// update prev time
 		this.global.prevTime = time;
 		// return dom
-		return display;
+		return container;
 	},
 	// helper functions
+	getMoment: function() {
+		if (this.config.tz !== "default") {
+			return moment().tz(this.config.tz)
+		}
+		return moment()
+	},
 	createTube: function(n) {
 		let digit = document.createElement("img");
 		digit.src = `${this.data.path}/nixie-digits/${this.config.size}/${n}.png`;
@@ -285,22 +316,22 @@ Module.register("MMM-nixie-clock", {
 	getDelay: function() {
 		if (this.global.mode === 'clock') {
 			if (this.config.displaySeconds) {	// update every second
-				return 1000 - moment().milliseconds() + 50;		// offset by 50ms
+				return 1000 - this.getMoment().milliseconds() + 50;		// offset by 50ms
 			} else {	// update every minute
-				return (60 - moment().seconds())*1000 - moment().milliseconds() + 50;
+				return (60 - this.getMoment().seconds())*1000 - this.getMoment().milliseconds() + 50;
 			}
 		} else if (this.global.mode === 'date') {
-			return 1000 - moment().milliseconds() + 50;		// offset by 50ms
+			return 1000 - this.getMoment().milliseconds() + 50;		// offset by 50ms
 		} else if (this.global.mode === 'reset') {      // update very 50s (digit-reset animation)
 			if (this.global.resetFlag === true) {
 				this.global.resetFlag = false;
 				if (this.config.displaySeconds) {
-					return 800 - moment().milliseconds();
+					return 800 - this.getMoment().milliseconds();
 				} else {
-					return (59 - moment().seconds())*1000 + 800 - moment().milliseconds();
+					return (59 - this.getMoment().seconds())*1000 + 800 - this.getMoment().milliseconds();
 				}
 			}
 			return 50;
 		}
-	},
+	}
 });

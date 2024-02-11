@@ -18,6 +18,8 @@ There are four configurable options:
 | displaySeconds | `true` for a 6-digit clock or `false` for a 4-digit clock. | `true` |
 | displayDateInterval | integer value >=0 and <=5 to set how often the date will be displayed in minutes (for example 2 is every other minute), 0 means do not display the date. | `2` |
 | displayDateTime | integer value >0 and <=3 to set the time the date will be displayed at the start of the minute. | `3` |
+| tz | moment.js timezone string (e.g. `'America/New_York'`). | `'default'` |
+| tz_title | timezone title display, default to timezone string, set to empty string to disable. | `'default'` |
 
 Sample config file (default):
 ```js
@@ -33,6 +35,8 @@ var config = {
         displaySeconds: true,
         displayDateInterval: 2,
         displayDateTime: 3,
+	tz: 'default',
+	tz_title: 'default'
       }
     }
   ]
