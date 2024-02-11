@@ -43,3 +43,11 @@
 .tube-large {
 	width: 160px;	
 }
+
+.timezone-title {
+	color: #fff88a;
+	text-align: center;
+	font-size: 2.25rem;
+	font-weight: lighter;
+	text-shadow: 0 0 5px #fc792c, 0 0 10px #fc792c, 0 0 20px #fc792c,  0 0 30px #fc792c, -1px 0 #fc9403, 0 1px #fc9403, 1px 0 #fc9403, 0 -1px #fc9403;
+}
