@@ -13,7 +13,8 @@ Module.register("MMM-nixie-clock", {
 		displaySeconds: true,	// 6 digit (true) or 4 digit clock (false)
 		displayDateInterval: 2,	// When to display date, every 2 minutes, 0 = don't display date
 		displayDateTime: 3,	// Display date for 3 seconds
-		tz: 'default'		// Timezone (e.g. "America/New_York"), set to "default" for local time
+		tz: 'default',		// Timezone (e.g. "America/New_York"), set to "default" for local time
+		tz_title: 'default'	// Timezone title, can be set to arbitrary string, set to empty string to disable, set to "default" to display the default timezone string, only works if timezone is set to non-default.
 	},
 	// global state variables (do not change)
 	global: {
@@ -72,6 +73,11 @@ Module.register("MMM-nixie-clock", {
 		if (typeof this.config.tz !== "string") {
 			Log.info("Invalid timezone + \"" + this.config.tz + "\". Using default timezone.");
 			this.config.tz = this.defaults.tz;
+		}
+		// config: tz_title (timezone title)
+		if (typeof this.config.tz_title !== "string") {
+			Log.info("Invalid timezone title \"" + this.config.tz_title + "\". Using default value.")
+			this.config.tz_title = this.defaults.tz_title;
 		}
 		
 		// kickstart clock
@@ -153,10 +159,14 @@ Module.register("MMM-nixie-clock", {
 		dot_1 = this.createDot();
 		// append digits
 		let container = document.createElement("div");	// parent container
-		if (this.config.tz !== "default") {
+		if (this.config.tz !== "default" && this.config.tz_title !== "") {
 			// only show timezone title if tz is specified
 			let tz_title = document.createElement("div");	// timezone title
-			tz_title.innerHTML = this.config.tz;
+			if (this.config.tz_title === "default") {
+				tz_title.innerHTML = this.config.tz;
+			} else {
+				tz_title.innerHTML = this.config.tz_title;
+			}
 			tz_title.classList.add("timezone-title");
 			container.appendChild(tz_title)
 		}
